@@ -6,6 +6,14 @@
 
 A production-grade, full-stack TypeScript monorepo setup for an Enterprise Operations Portal featuring modular backend architecture (Express, Prisma, PostgreSQL) and dynamic frontend (React, Vite, Tailwind CSS, TanStack Query).
 
+## 🌐 Live Production Deployments
+
+| Component | Service | Live URL |
+|---|---|---|
+| 🌐 **Frontend App** | Vercel | [https://mini-erp-crm-operations-portal-fron-dun.vercel.app/](https://mini-erp-crm-operations-portal-fron-dun.vercel.app/) |
+| ⚙️ **Backend REST API** | Render | [https://mini-erp-crm-operations-portal-z3uy.onrender.com](https://mini-erp-crm-operations-portal-z3uy.onrender.com) |
+| 🗄️ **PostgreSQL Database** | Neon | `ep-little-sound-ayz549ew.c-5.us-east-2.aws.neon.tech` |
+
 ## 📁 Repository Structure
 
 ```
