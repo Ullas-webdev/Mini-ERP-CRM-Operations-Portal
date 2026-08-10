@@ -271,10 +271,10 @@ export const ChallanFormModal: React.FC<ChallanFormModalProps> = ({
             {lineItems.map((item, idx) => (
               <div
                 key={idx}
-                className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 grid grid-cols-12 gap-2 items-center text-xs"
+                className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-2 items-center text-xs relative"
               >
-                <div className="col-span-5">
-                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Product</label>
+                <div className="sm:col-span-5">
+                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Product *</label>
                   <select
                     value={item.productId}
                     onChange={(e) => handleProductChange(idx, e.target.value)}
@@ -288,38 +288,41 @@ export const ChallanFormModal: React.FC<ChallanFormModalProps> = ({
                   </select>
                 </div>
 
-                <div className="col-span-2">
-                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Quantity</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => handleQuantityChange(idx, e.target.value)}
-                    className="w-full rounded-lg bg-slate-950 border border-slate-800 p-2 text-xs text-slate-200 text-center font-mono"
-                  />
+                <div className="grid grid-cols-3 sm:contents gap-2">
+                  <div>
+                    <label className="block text-[10px] text-slate-400 font-semibold mb-1">Quantity</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => handleQuantityChange(idx, e.target.value)}
+                      className="w-full rounded-lg bg-slate-950 border border-slate-800 p-2 text-xs text-slate-200 text-center font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-400 font-semibold mb-1">Price</label>
+                    <span className="block p-2 text-sky-400 font-mono text-xs font-semibold">
+                      ₹{item.unitPrice.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-400 font-semibold mb-1">Subtotal</label>
+                    <span className="block p-2 text-emerald-400 font-mono text-xs font-bold">
+                      ₹{(item.quantity * item.unitPrice).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="col-span-2">
-                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Snapshot Price</label>
-                  <span className="block p-2 text-sky-400 font-mono text-xs font-semibold">
-                    ₹{item.unitPrice.toFixed(2)}
-                  </span>
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-[10px] text-slate-400 font-semibold mb-1">Subtotal</label>
-                  <span className="block p-2 text-emerald-400 font-mono text-xs font-bold">
-                    ₹{(item.quantity * item.unitPrice).toFixed(2)}
-                  </span>
-                </div>
-
-                <div className="col-span-1 text-right pt-4">
+                <div className="absolute top-2 right-2 sm:relative sm:top-0 sm:right-0 sm:col-span-1 text-right sm:pt-4">
                   <button
                     type="button"
                     onClick={() => handleRemoveLineItem(idx)}
-                    className="text-slate-500 hover:text-rose-400 p-1"
+                    className="text-slate-500 hover:text-rose-400 p-1.5 rounded-lg bg-slate-950/60 sm:bg-transparent"
+                    title="Remove item"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-rose-400 sm:text-slate-500" />
                   </button>
                 </div>
               </div>

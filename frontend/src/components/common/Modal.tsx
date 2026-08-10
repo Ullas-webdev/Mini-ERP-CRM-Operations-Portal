@@ -42,9 +42,9 @@ export const Modal: React.FC<ModalProps> = ({
       />
 
       {/* Modal Container */}
-      <div className="relative z-10 w-full max-w-lg rounded-2xl glass-card border border-slate-800 p-6 shadow-2xl transition-all transform scale-100">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <h3 className="text-lg font-bold text-slate-100">{title}</h3>
+      <div className="relative z-10 w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl glass-card border border-slate-800 p-4 sm:p-6 shadow-2xl transition-all transform scale-100">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-800 flex-shrink-0">
+          <h3 className="text-base sm:text-lg font-bold text-slate-100">{title}</h3>
           <button
             onClick={onClose}
             className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
@@ -53,12 +53,12 @@ export const Modal: React.FC<ModalProps> = ({
           </button>
         </div>
 
-        <div className="py-5 text-sm text-slate-300">{children}</div>
+        <div className="py-4 text-sm text-slate-300 overflow-y-auto flex-1 pr-1">{children}</div>
 
         {footer ? (
-          <div className="pt-4 border-t border-slate-800 flex justify-end space-x-3">{footer}</div>
+          <div className="pt-4 border-t border-slate-800 flex justify-end space-x-3 flex-shrink-0">{footer}</div>
         ) : (
-          <div className="pt-4 border-t border-slate-800 flex justify-end">
+          <div className="pt-4 border-t border-slate-800 flex justify-end flex-shrink-0">
             <Button variant="secondary" onClick={onClose}>
               Close
             </Button>

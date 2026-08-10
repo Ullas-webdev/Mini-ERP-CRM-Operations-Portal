@@ -8,6 +8,7 @@ import {
   CreditCard,
   Building2,
   FileCheck2,
+  X,
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../context/AuthContext';
 import { Badge } from '../common/Badge';
@@ -28,25 +29,40 @@ const navItems: NavItem[] = [
   { name: 'Activity Log', path: '/audit-logs', icon: FileCheck2, roles: ['ADMIN'] },
 ];
 
-export const SidebarNav: React.FC = () => {
+interface SidebarNavProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const SidebarNav: React.FC<SidebarNavProps> = ({ isOpen = false, onClose }) => {
   const { user } = useAuth();
   const currentRole = user?.role || 'SALES';
 
-  // Strictly filter navigation items permitted for active user role
   const visibleNavItems = navItems.filter((item) => item.roles.includes(currentRole));
 
-  return (
-    <aside className="w-64 flex-shrink-0 bg-slate-900/90 border-r border-slate-800/80 flex flex-col justify-between h-screen sticky top-0">
+  const sidebarContent = (
+    <>
       <div>
         {/* Brand Header */}
-        <div className="h-16 px-6 flex items-center space-x-3 border-b border-slate-800/80">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-950/50">
-            <Building2 className="h-5 w-5 text-white" />
+        <div className="h-16 px-6 flex items-center justify-between border-b border-slate-800/80">
+          <div className="flex items-center space-x-3">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-950/50">
+              <Building2 className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold tracking-tight text-white">MINI ERP</h1>
+              <p className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">CRM Operations</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-base font-bold tracking-tight text-white">MINI ERP</h1>
-            <p className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">CRM Operations</p>
-          </div>
+          {/* Mobile Close Button */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
         {/* Role-Filtered Navigation Section */}
@@ -61,6 +77,7 @@ export const SidebarNav: React.FC = () => {
               <NavLink
                 key={item.path}
                 to={item.path}
+                onClick={onClose}
                 className={({ isActive }) =>
                   `flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     isActive
@@ -91,6 +108,31 @@ export const SidebarNav: React.FC = () => {
           </div>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Fixed Sidebar */}
+      <aside className="hidden md:flex w-64 flex-shrink-0 bg-slate-900/90 border-r border-slate-800/80 flex-col justify-between h-screen sticky top-0">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Slide-Over Overlay & Drawer */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+            onClick={onClose}
+          />
+          {/* Drawer */}
+          <aside className="relative z-10 w-72 max-w-[80vw] bg-slate-900 border-r border-slate-800 flex flex-col justify-between h-full shadow-2xl">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };
+

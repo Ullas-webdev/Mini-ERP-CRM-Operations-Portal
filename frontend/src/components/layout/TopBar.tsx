@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Shield, LogOut, Search, Package, Users, X } from 'lucide-react';
+import { User, Shield, LogOut, Search, Package, Users, X, Menu } from 'lucide-react';
 import { useAuth, UserRole } from '../../context/AuthContext';
 import { Badge, BadgeVariant } from '../common/Badge';
 import { axiosClient } from '../../api/axiosClient';
@@ -69,7 +69,11 @@ const useGlobalSearch = (query: string) => {
   return { results, isLoading };
 };
 
-export const TopBar: React.FC = () => {
+interface TopBarProps {
+  onToggleMobileMenu?: () => void;
+}
+
+export const TopBar: React.FC<TopBarProps> = ({ onToggleMobileMenu }) => {
   const { user, setRole, logout } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -125,7 +129,18 @@ export const TopBar: React.FC = () => {
   };
 
   return (
-    <header className="h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 md:px-6 flex items-center justify-between sticky top-0 z-40">
+    <header className="h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-40 gap-2">
+      {/* Mobile Menu Hamburger Toggle */}
+      {onToggleMobileMenu && (
+        <button
+          onClick={onToggleMobileMenu}
+          className="md:hidden p-2 rounded-xl text-slate-300 hover:text-white bg-slate-800/60 border border-slate-700/60 focus:outline-none flex-shrink-0"
+          aria-label="Toggle Navigation Menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      )}
+
       {/* Global Search */}
       <div ref={searchRef} className="relative flex-1 max-w-sm">
         <div className={`flex items-center gap-2 bg-slate-950/60 border rounded-xl px-3 py-2 transition-all ${
