@@ -1,0 +1,19 @@
+{
+  "name": "mini-erp-crm-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mini ERP + CRM Operations Portal Monorepo",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:backend": "npm --prefix backend run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "prisma:generate": "npm --prefix backend run prisma:generate",
+    "prisma:push": "npm --prefix backend run prisma:push",
+    "prisma:seed": "npm --prefix backend run seed"
+  }
+}

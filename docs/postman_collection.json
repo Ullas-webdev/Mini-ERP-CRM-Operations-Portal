@@ -1,0 +1,493 @@
+{
+  "info": {
+    "_postman_id": "c886d27d-56e1-46cd-bc55-c5901eb85470",
+    "name": "Mini ERP + CRM Operations Portal API",
+    "description": "Comprehensive Postman collection for Mini ERP + CRM Monorepo API V1. Includes example request payloads, authentication tokens, and the 422 Insufficient Stock edge case response.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "YOUR_JWT_ACCESS_TOKEN_HERE",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication & Session",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@demo.com\",\n  \"password\": \"Demo@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 Success - Login",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"usr-admin-01\",\n      \"name\": \"Admin Operator\",\n      \"email\": \"admin@demo.com\",\n      \"role\": \"ADMIN\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login (Sales Exec)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sales@demo.com\",\n  \"password\": \"Demo@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Access Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer CRM Domain",
+      "item": [
+        {
+          "name": "Create Customer / Lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rajesh Sharma\",\n  \"businessName\": \"Apex Engineering Works\",\n  \"email\": \"rajesh@apexeng.com\",\n  \"mobile\": \"+91 98765 43210\",\n  \"gstNumber\": \"27AAAAA0000A1Z5\",\n  \"customerType\": \"WHOLESALE\",\n  \"address\": \"Plot 45, MIDC Industrial Area, Pune\",\n  \"status\": \"LEAD\",\n  \"followUpDate\": \"2026-08-20T10:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"]
+            }
+          }
+        },
+        {
+          "name": "List Customers (Search & Filter)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers?page=1&limit=10&status=LEAD&search=Apex",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "LEAD" },
+                { "key": "search", "value": "Apex" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer Detail by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", ":id"],
+              "variable": [{ "key": "id", "value": "CUSTOMER_UUID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Add Timeline Note to Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Discussed hydraulic valve requirements. Client requested quotation for 50 units.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/:id/notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", ":id", "notes"],
+              "variable": [{ "key": "id", "value": "CUSTOMER_UUID_HERE" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products & Stock Inventory Domain",
+      "item": [
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Heavy Duty Pneumatic Actuator\",\n  \"sku\": \"SKU-ACT-005\",\n  \"category\": \"VALVES\",\n  \"unitPrice\": 8500.00,\n  \"currentStock\": 25,\n  \"minStockAlert\": 5,\n  \"warehouseLocation\": \"Rack B-04\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            }
+          }
+        },
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            }
+          }
+        },
+        {
+          "name": "Get Low Stock Alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/low-stock",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "low-stock"]
+            }
+          }
+        },
+        {
+          "name": "Manual Stock Adjustment (IN / OUT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 10,\n  \"movementType\": \"IN\",\n  \"reason\": \"Supplier restock batch #8820\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/:id/stock-adjustment",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":id", "stock-adjustment"],
+              "variable": [{ "key": "id", "value": "PRODUCT_UUID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Get Stock Movement Audit Ledger",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/:id/movements?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":id", "movements"],
+              "variable": [{ "key": "id", "value": "PRODUCT_UUID_HERE" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sales Challan & Order Domain",
+      "item": [
+        {
+          "name": "Create Draft Sales Challan",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"CUSTOMER_UUID_HERE\",\n  \"lineItems\": [\n    {\n      \"productId\": \"PRODUCT_UUID_1\",\n      \"quantity\": 2\n    },\n    {\n      \"productId\": \"PRODUCT_UUID_2\",\n      \"quantity\": 5\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challans",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans"]
+            }
+          }
+        },
+        {
+          "name": "Get Sales Challan Register",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans?page=1&limit=10&status=DRAFT",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "DRAFT" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Challan Detail Snapshot",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", ":id"],
+              "variable": [{ "key": "id", "value": "CHALLAN_UUID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Export Challan PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/:id/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", ":id", "pdf"],
+              "variable": [{ "key": "id", "value": "CHALLAN_UUID_HERE" }]
+            }
+          }
+        },
+        {
+          "name": "Confirm & Fulfill Challan (SUCCESS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/:id/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", ":id", "confirm"],
+              "variable": [{ "key": "id", "value": "CHALLAN_UUID_HERE" }]
+            }
+          },
+          "response": [
+            {
+              "name": "200 Success - Confirmed",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"ch-123\",\n    \"challanNumber\": \"CH-2026-0004\",\n    \"status\": \"CONFIRMED\",\n    \"confirmedAt\": \"2026-08-10T22:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Confirm Challan (EDGE CASE: Insufficient Stock 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/:id/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", ":id", "confirm"],
+              "variable": [{ "key": "id", "value": "CHALLAN_WITH_EXCESS_QTY_UUID" }]
+            }
+          },
+          "response": [
+            {
+              "name": "400/422 Error - Insufficient Stock Edge Case",
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"INSUFFICIENT_STOCK\",\n    \"message\": \"Insufficient stock for line items. Transaction rolled back with zero deductions.\",\n    \"details\": [\n      {\n        \"productId\": \"9d406dfa-c017-42a0-a1ec-81742d30227a\",\n        \"productName\": \"Industrial Hydraulic Valve 3/4\\\"\",\n        \"sku\": \"SKU-VALVE-001\",\n        \"availableStock\": 2,\n        \"requestedQuantity\": 500,\n        \"shortage\": 498\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancel Challan (Restores Stock if Confirmed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans/:id/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", ":id", "cancel"],
+              "variable": [{ "key": "id", "value": "CHALLAN_UUID_HERE" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard & Analytics Domain",
+      "item": [
+        {
+          "name": "Get Admin Dashboard Stats & 7-Day Chart",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Sales Dashboard Summary & Overdue Leads",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/sales-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "sales-summary"]
+            }
+          }
+        },
+        {
+          "name": "Get Warehouse Dashboard Summary & Movements",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/warehouse-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "warehouse-summary"]
+            }
+          }
+        },
+        {
+          "name": "Get Accounts Dashboard Summary & Monthly Revenue",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/accounts-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "accounts-summary"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit Log & System Health",
+      "item": [
+        {
+          "name": "Get Admin Audit Logs Feed",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit-logs"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "System Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

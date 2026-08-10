@@ -1,0 +1,169 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                  String         @id @default(uuid())
+  name                String
+  email               String         @unique
+  passwordHash        String
+  role                String         @default("SALES") // ADMIN | SALES | WAREHOUSE | ACCOUNTS
+  isActive            Boolean        @default(true)
+  failedLoginAttempts Int            @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  
+  createdCustomers    Customer[]     @relation("CustomerCreator")
+  customerNotes       CustomerNote[] @relation("NoteAuthor")
+  stockMovements      StockMovement[]@relation("MovementCreator")
+  salesChallans       SalesChallan[] @relation("ChallanCreator")
+  auditLogs           AuditLog[]
+  refreshTokens       RefreshToken[]
+
+  @@map("users")
+}
+
+model Customer {
+  id           String         @id @default(uuid())
+  name         String
+  mobile       String
+  email        String?
+  businessName String
+  gstNumber    String?
+  customerType String         @default("RETAIL") // RETAIL | WHOLESALE | DISTRIBUTOR
+  address      String
+  status       String         @default("LEAD")   // LEAD | ACTIVE | INACTIVE
+  followUpDate DateTime?
+  createdBy    String
+  creator      User           @relation("CustomerCreator", fields: [createdBy], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  notes        CustomerNote[]
+  salesChallans SalesChallan[]
+
+  @@index([createdBy])
+  @@index([status])
+  @@map("customers")
+}
+
+model CustomerNote {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation("NoteAuthor", fields: [authorId], references: [id])
+  note       String
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+  @@map("customer_notes")
+}
+
+model Product {
+  id                String            @id @default(uuid())
+  name              String
+  sku               String            @unique
+  category          String
+  unitPrice         Float
+  currentStock      Int               @default(0)
+  minStockAlert     Int               @default(10)
+  warehouseLocation String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  stockMovements    StockMovement[]
+  lineItems         ChallanLineItem[]
+
+  @@index([sku])
+  @@map("products")
+}
+
+model StockMovement {
+  id              String   @id @default(uuid())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+  quantityChanged Int
+  movementType    String   // IN | OUT
+  reason          String
+  createdBy       String
+  creator         User     @relation("MovementCreator", fields: [createdBy], references: [id])
+  createdAt       DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+model SalesChallan {
+  id            String            @id @default(uuid())
+  challanNumber String            @unique
+  customerId    String
+  customer      Customer          @relation(fields: [customerId], references: [id])
+  status        String            @default("DRAFT") // DRAFT | CONFIRMED | CANCELLED
+  totalQuantity Int               @default(0)
+  createdBy     String
+  creator       User              @relation("ChallanCreator", fields: [createdBy], references: [id])
+  createdAt     DateTime          @default(now())
+  confirmedAt   DateTime?
+  updatedAt     DateTime          @updatedAt
+
+  lineItems     ChallanLineItem[]
+
+  @@index([customerId])
+  @@index([status])
+  @@map("sales_challans")
+}
+
+model ChallanLineItem {
+  id                  String       @id @default(uuid())
+  challanId           String
+  challan             SalesChallan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+  productId           String
+  product             Product      @relation(fields: [productId], references: [id])
+  quantity            Int
+  unitPriceSnapshot   Float
+  productNameSnapshot String
+  createdAt           DateTime     @default(now())
+
+  @@index([challanId])
+  @@index([productId])
+  @@map("challan_line_items")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String
+  entityType  String
+  entityId    String?
+  beforeState String?
+  afterState  String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
