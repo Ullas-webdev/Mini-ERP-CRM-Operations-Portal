@@ -1,6 +1,6 @@
 # Mini ERP + CRM Operations Portal
 
-[![CI Pipeline](https://github.com/user/repo/actions/workflows/ci.yml/badge.svg)](https://github.com/user/repo/actions/workflows/ci.yml)
+[![CI Pipeline](https://github.com/Ullas-webdev/Mini-ERP-CRM-Operations-Portal/actions/workflows/ci.yml/badge.svg)](https://github.com/Ullas-webdev/Mini-ERP-CRM-Operations-Portal/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
 ![Security Audit](https://img.shields.io/badge/Security-Audit_Logged-emerald)
 
