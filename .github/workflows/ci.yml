@@ -20,15 +20,15 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: package-lock.json
 
-      - name: Install Dependencies
+      - name: Install Monorepo Dependencies
         run: npm install
-        working-directory: ./backend
 
       - name: Generate Prisma Client
         run: npx prisma generate
         working-directory: ./backend
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/testdb?sslmode=disable"
 
       - name: Typecheck Backend
         run: npx tsc --noEmit
@@ -51,11 +51,9 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: package-lock.json
 
-      - name: Install Dependencies
+      - name: Install Monorepo Dependencies
         run: npm install
-        working-directory: ./frontend
 
       - name: Typecheck Frontend
         run: npx tsc --noEmit
@@ -64,4 +62,7 @@ jobs:
       - name: Build Frontend Production Asset Bundle
         run: npm run build
         working-directory: ./frontend
+        env:
+          VITE_API_BASE_URL: "https://mini-erp-crm-operations-portal-z3uy.onrender.com/api/v1"
+
 
