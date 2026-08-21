@@ -21,7 +21,7 @@ export const globalRateLimiter = rateLimit({
 // Rate limiter for authentication endpoints (1,000 requests per 15 min in dev mode)
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isDev ? 1000 : 10,
+  max: isDev ? 1000 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
