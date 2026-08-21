@@ -1,65 +1,75 @@
-# Mini ERP + CRM Operations Portal — Architecture Overview
+# 🏗️ Mini Operations ERP — Architecture & System Design
 
-## Overview
+> **Technical Architecture Specification Document**  
+> System: Mini Operations ERP  
+> Architecture Pattern: Modular Monolith  
 
-The Mini ERP + CRM Operations Portal is built as a strict full-stack TypeScript monorepo with high standard security, validation, observability, and modular component design.
+---
+
+## 1. Modular Monolith Architecture
+
+The application is structured as a **Modular Monolith** with clean separation between HTTP controllers, authorization gateways, input validation schemas, service logic, and database transaction boundaries.
 
 ```
-                  +-----------------------+
-                  |  React Frontend App   |
-                  |  (Vite + Tailwind)    |
-                  +-----------+-----------+
-                              |
-                              | REST / JSON
-                              v
-                  +-----------------------+
-                  | Express Backend API   |
-                  | (TypeScript + Pino)   |
-                  +-----------+-----------+
-                              |
-                              | Prisma ORM
-                              v
-                  +-----------------------+
-                  | PostgreSQL Database   |
-                  +-----------------------+
+backend/
+├── src/
+│   ├── config/             # Environment validation (Zod schema)
+│   ├── controllers/        # Request handling & HTTP response shaping
+│   │   ├── authController.ts
+│   │   ├── locationController.ts
+│   │   ├── inventoryController.ts
+│   │   ├── workOrderController.ts
+│   │   ├── transferController.ts
+│   │   └── customerOrderController.ts
+│   ├── middleware/         # Security, Auth, Logging & Validation
+│   │   ├── auth.ts         # JWT verification & RBAC authorization
+│   │   ├── validateRequest.ts # Zod schema validation
+│   │   └── errorHandler.ts # Centralized error handling
+│   ├── routes/             # REST route declarations
+│   └── utils/              # Prisma client, errors, logging
 ```
 
-## Core Backend Principles
+---
 
-1. **Strict TypeScript & Fail-Fast Configuration**:
-   - `tsconfig.json` enforces `"strict": true`.
-   - `src/config/env.ts` uses Zod to validate all environment variables on boot. Missing or invalid variables immediately halt process startup.
+## 2. Core Business Invariants & Math Formulas
 
-2. **Middleware Pipeline**:
-   - `Helmet`: Sets HTTP security headers.
-   - `Cors`: Restricts cross-origin requests to an explicit allowlist (no wildcard `*`).
-   - `Pino Logger`: Logs request ID (`x-request-id`), user ID (if auth context exists), path, status, and execution latency (`latencyMs`).
-   - `Rate Limiter`: `express-rate-limit` enforces global limits (100 req/15 min) and stricter limits on authentication routes (10 req/15 min).
-   - `Zod Validation`: `validateRequest` parses and validates incoming `body`, `query`, and `params` schemas BEFORE route handlers run.
-   - `Centralized Error Handler`: Formats all uncaught errors, standard AppErrors, and Zod errors into a unified shape:
-     ```json
-     {
-       "success": false,
-       "error": {
-         "code": "VALIDATION_ERROR",
-         "message": "Invalid request parameters",
-         "details": [...]
-       }
-     }
-     ```
+### 2.1 Available Quantity Formula
+Available stock is computed dynamically per location and batch:
+$$\text{Available Quantity} = \text{Physical Quantity} - \text{Reserved Quantity}$$
 
-3. **Prisma ORM & PostgreSQL**:
-   - Database schemas defined in `backend/prisma/schema.prisma`.
-   - Client managed via singleton pattern (`src/utils/prisma.ts`).
+### 2.2 Work Order Shortage Engine Formula
+Material shortage is computed dynamically across available stock at a location:
+$$\text{Shortage} = \max(0, \text{Required Quantity} - \text{Available Stock at Location})$$
 
-## Core Frontend Principles
+---
 
-1. **Role-Aware Security**:
-   - `ProtectedRoute` verifies user authentication and matches active user roles (`ADMIN`, `SALES`, `WAREHOUSE`, `ACCOUNTS`) against required view permissions.
+## 3. Transfer Lifecycle State Machine
 
-2. **Server State & Networking**:
-   - **TanStack Query (v5)** manages async server state with caching, background revalidation, and retry strategies.
-   - **Axios Client**: Intercepts requests to inject JWT tokens and handles automatic 401 token refresh flow.
+```mermaid
+stateDiagram-v2
+    [*] --> REQUESTED : Requested by Admin/Ops
+    REQUESTED --> DISPATCHED : Dispatch Action
+    note right of DISPATCHED
+      Source Physical Stock Decremented.
+      Destination Stock Unchanged.
+    end note
+    DISPATCHED --> RECEIVED : Receive Action
+    note right of RECEIVED
+      Destination Physical Stock Incremented.
+      Double Receive Blocked (409 Conflict).
+    end note
+    RECEIVED --> [*]
+```
 
-3. **Shared Design System**:
-   - Consistent typography, dark slate design system, badges, standard inputs, cards, tables, and modal dialogs.
+---
+
+## 4. Transaction & Concurrency Strategy
+
+All inventory-modifying endpoints execute inside database transactions (`prisma.$transaction`).
+
+### Race Condition Protection
+When two requests attempt to reserve stock simultaneously from $\text{Available} = 10$:
+- **Request A (8 units)** and **Request B (8 units)** enter concurrent transactions.
+- Transaction A reads $\text{Available} = 10 \ge 8$, increments `reservedQuantity` to 8, and commits.
+- Transaction B re-evaluates $\text{Available} = 2 < 8$, rejects with `422 Unprocessable Entity`, and rolls back cleanly.
+- Result: Exactly one reservation succeeds; final $\text{Reserved} = 8$, $\text{Available} = 2$.

@@ -1,0 +1,157 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Mini Operations ERP API Documentation",
+    "version": "2.0.0",
+    "description": "Production REST API for Mini Operations ERP covering Auth, Multi-Location Inventory, Work Orders with Shortage Calculation, Internal Transfers, and Customer Stock Reservations."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api/v1",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "https://mini-erp-crm-operations-portal-z3uy.onrender.com/api/v1",
+      "description": "Production Live Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "User Login",
+        "description": "Authenticate user and issue JWT token",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "example": "admin@demo.com" },
+                  "password": { "type": "string", "example": "Demo@123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/locations": {
+      "get": {
+        "summary": "List Physical Locations",
+        "responses": {
+          "200": { "description": "List of locations" }
+        }
+      }
+    },
+    "/inventory": {
+      "get": {
+        "summary": "List Physical Inventory Records",
+        "description": "Returns inventory records with physicalQuantity, reservedQuantity, and availableQuantity (Physical - Reserved)",
+        "responses": {
+          "200": { "description": "Inventory list" }
+        }
+      },
+      "post": {
+        "summary": "Initialize / Add Inventory Batch",
+        "responses": {
+          "201": { "description": "Inventory created" }
+        }
+      }
+    },
+    "/inventory/adjust": {
+      "post": {
+        "summary": "Adjust Physical Stock (IN / OUT)",
+        "responses": {
+          "200": { "description": "Stock adjusted" },
+          "422": { "description": "Unprocessable reduction below available stock" }
+        }
+      }
+    },
+    "/work-orders": {
+      "get": {
+        "summary": "List Work Orders with Live Shortage Engine",
+        "responses": {
+          "200": { "description": "Work Order list" }
+        }
+      },
+      "post": {
+        "summary": "Create Production Work Order (Admin Only)",
+        "description": "Automatically calculates material shortage: Shortage = Max(0, Required Quantity - Available at Location)",
+        "responses": {
+          "201": { "description": "Work Order created" }
+        }
+      }
+    },
+    "/transfers": {
+      "get": {
+        "summary": "List Internal Stock Transfers",
+        "responses": {
+          "200": { "description": "Transfers list" }
+        }
+      },
+      "post": {
+        "summary": "Request Internal Stock Transfer",
+        "responses": {
+          "201": { "description": "Transfer requested" }
+        }
+      }
+    },
+    "/transfers/{id}/dispatch": {
+      "post": {
+        "summary": "Dispatch Transfer",
+        "description": "Reduces source physical stock immediately. Destination stock does NOT increase yet.",
+        "responses": {
+          "200": { "description": "Transfer dispatched" },
+          "422": { "description": "Transfer quantity exceeds source available stock" }
+        }
+      }
+    },
+    "/transfers/{id}/receive": {
+      "post": {
+        "summary": "Receive Transfer",
+        "description": "Increments destination physical stock. Prevents double-receive.",
+        "responses": {
+          "200": { "description": "Transfer received" },
+          "409": { "description": "Double receive prevented" }
+        }
+      }
+    },
+    "/customer-orders": {
+      "get": {
+        "summary": "List Customer Orders",
+        "responses": {
+          "200": { "description": "Customer Orders list" }
+        }
+      },
+      "post": {
+        "summary": "Create Order & Reserve Inventory",
+        "description": "Atomically increments reservedQuantity inside transaction lock against Available Quantity.",
+        "responses": {
+          "201": { "description": "Order created & stock reserved" },
+          "422": { "description": "Reservation exceeds available stock" }
+        }
+      }
+    }
+  }
+}

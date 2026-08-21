@@ -222,3 +222,7 @@ OpenAPI 3.0 Specification file: [`backend/openapi.json`](file:///c:/Users/GP65/D
 
 1. **Local SQLite / Neon Postgres**: The application is configured to run on PostgreSQL in cloud production (Neon DB) and SQLite locally for 100% offline verification.
 2. **Single Currency**: Monetary values are formatted in INR (`₹`).
+
+
+FOR,
+FUNDSROOM BY ULLAS V(FULL STACK DEVELOPER)
