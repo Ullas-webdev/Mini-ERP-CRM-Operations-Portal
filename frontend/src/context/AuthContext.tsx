@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { axiosClient } from '../api/axiosClient';
 
-export type UserRole = 'ADMIN' | 'SALES' | 'WAREHOUSE' | 'ACCOUNTS';
+export type UserRole = 'ADMIN' | 'OPERATIONS' | 'SALES';
 
 export interface User {
   id: string;
@@ -22,9 +22,8 @@ interface AuthContextType {
 
 const roleEmails: Record<UserRole, string> = {
   ADMIN: 'admin@demo.com',
+  OPERATIONS: 'ops@demo.com',
   SALES: 'sales@demo.com',
-  WAREHOUSE: 'warehouse@demo.com',
-  ACCOUNTS: 'accounts@demo.com',
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -75,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await axiosClient.post('/auth/login', { email, password });
       const { user: userData, accessToken } = response.data.data;
-      
+
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('auth_user', JSON.stringify(userData));
       setUser(userData);
@@ -94,7 +93,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await login(email, 'Demo@123');
     } catch (err) {
-      // Fallback local update if offline
       if (user) {
         const updated = { ...user, role };
         localStorage.setItem('auth_user', JSON.stringify(updated));

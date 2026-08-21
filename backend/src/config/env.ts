@@ -26,12 +26,12 @@ const envSchema = z.object({
     .string({
       required_error: 'JWT_SECRET environment variable is required',
     })
-    .min(16, 'JWT_SECRET must be at least 16 characters long'),
+    .min(32, 'JWT_SECRET must be at least 32 characters long'),
   JWT_REFRESH_SECRET: z
     .string({
       required_error: 'JWT_REFRESH_SECRET environment variable is required',
     })
-    .min(16, 'JWT_REFRESH_SECRET must be at least 16 characters long'),
+    .min(32, 'JWT_REFRESH_SECRET must be at least 32 characters long'),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),

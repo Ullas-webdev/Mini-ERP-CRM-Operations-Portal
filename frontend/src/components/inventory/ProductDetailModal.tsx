@@ -41,7 +41,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
 }) => {
   const { user } = useAuth();
-  const canAdjustStock = user?.role === 'ADMIN' || user?.role === 'WAREHOUSE';
+  const canAdjustStock = user?.role === 'ADMIN' || user?.role === 'OPERATIONS';
 
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [movementPage, setMovementPage] = useState(1);

@@ -2,12 +2,13 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Activity,
-  ShoppingBag,
   Boxes,
-  CreditCard,
-  Building2,
+  ClipboardList,
+  ArrowLeftRight,
+  ShoppingBag,
+  Activity,
   FileCheck2,
+  Building2,
   X,
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../context/AuthContext';
@@ -21,11 +22,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
-  { name: 'System Health', path: '/health', icon: Activity, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
-  { name: 'Sales & CRM', path: '/sales', icon: ShoppingBag, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
-  { name: 'Warehouse & Stock', path: '/warehouse', icon: Boxes, roles: ['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] },
-  { name: 'Accounts & Billing', path: '/accounts', icon: CreditCard, roles: ['ADMIN', 'ACCOUNTS'] },
+  { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['ADMIN', 'OPERATIONS', 'SALES'] },
+  { name: 'Inventory', path: '/inventory', icon: Boxes, roles: ['ADMIN', 'OPERATIONS', 'SALES'] },
+  { name: 'Work Orders', path: '/work-orders', icon: ClipboardList, roles: ['ADMIN', 'OPERATIONS'] },
+  { name: 'Internal Transfers', path: '/transfers', icon: ArrowLeftRight, roles: ['ADMIN', 'OPERATIONS'] },
+  { name: 'Customer Orders', path: '/customer-orders', icon: ShoppingBag, roles: ['ADMIN', 'SALES'] },
+  { name: 'System Health', path: '/health', icon: Activity, roles: ['ADMIN', 'OPERATIONS', 'SALES'] },
   { name: 'Activity Log', path: '/audit-logs', icon: FileCheck2, roles: ['ADMIN'] },
 ];
 
@@ -51,10 +53,9 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isOpen = false, onClose 
             </div>
             <div>
               <h1 className="text-base font-bold tracking-tight text-white">MINI ERP</h1>
-              <p className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">CRM Operations</p>
+              <p className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Operations Portal</p>
             </div>
           </div>
-          {/* Mobile Close Button */}
           {onClose && (
             <button
               onClick={onClose}
@@ -65,7 +66,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isOpen = false, onClose 
           )}
         </div>
 
-        {/* Role-Filtered Navigation Section */}
+        {/* Navigation Section */}
         <div className="p-4 space-y-1">
           <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
             Operations Menu
@@ -96,14 +97,14 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isOpen = false, onClose 
         </div>
       </div>
 
-      {/* Role Indicator Footer */}
+      {/* Role Footer */}
       <div className="p-4 border-t border-slate-800/80 bg-slate-950/40">
         <div className="rounded-lg bg-slate-900/80 p-3 border border-slate-800/80">
-          <p className="text-xs font-medium text-slate-400 mb-1">Active Permission Level</p>
+          <p className="text-xs font-medium text-slate-400 mb-1">Active Permission Role</p>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-200">{currentRole}</span>
-            <Badge variant={currentRole === 'ADMIN' ? 'purple' : 'info'} size="sm">
-              Role Gated
+            <Badge variant={currentRole === 'ADMIN' ? 'purple' : currentRole === 'OPERATIONS' ? 'warning' : 'info'} size="sm">
+              Role Protected
             </Badge>
           </div>
         </div>
@@ -113,20 +114,16 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isOpen = false, onClose 
 
   return (
     <>
-      {/* Desktop Fixed Sidebar */}
       <aside className="hidden md:flex w-64 flex-shrink-0 bg-slate-900/90 border-r border-slate-800/80 flex-col justify-between h-screen sticky top-0">
         {sidebarContent}
       </aside>
 
-      {/* Mobile Slide-Over Overlay & Drawer */}
       {isOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
             onClick={onClose}
           />
-          {/* Drawer */}
           <aside className="relative z-10 w-72 max-w-[80vw] bg-slate-900 border-r border-slate-800 flex flex-col justify-between h-full shadow-2xl">
             {sidebarContent}
           </aside>
@@ -135,4 +132,3 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ isOpen = false, onClose 
     </>
   );
 };
-

@@ -5,10 +5,12 @@ import { prisma } from '../utils/prisma';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { RequestWithId } from './loggerMiddleware';
 
+export type UserRole = 'ADMIN' | 'OPERATIONS' | 'SALES';
+
 export interface JwtPayload {
   userId: string;
   email: string;
-  role: 'ADMIN' | 'SALES' | 'WAREHOUSE' | 'ACCOUNTS';
+  role: UserRole;
 }
 
 export const authenticate = async (
@@ -25,7 +27,7 @@ export const authenticate = async (
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
 
     // Verify user exists and is active in database
     const user = await prisma.user.findUnique({
@@ -45,7 +47,7 @@ export const authenticate = async (
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role as 'ADMIN' | 'SALES' | 'WAREHOUSE' | 'ACCOUNTS',
+      role: user.role as UserRole,
     };
 
     next();
@@ -57,13 +59,13 @@ export const authenticate = async (
   }
 };
 
-export const authorize = (...allowedRoles: Array<'ADMIN' | 'SALES' | 'WAREHOUSE' | 'ACCOUNTS'>) => {
+export const authorize = (...allowedRoles: UserRole[]) => {
   return (req: RequestWithId, _res: Response, next: NextFunction): void => {
     if (!req.user) {
       return next(new UnauthorizedError('User authentication required'));
     }
 
-    if (!allowedRoles.includes(req.user.role as any)) {
+    if (!allowedRoles.includes(req.user.role as UserRole)) {
       const attemptedPath = req.originalUrl || req.url || 'unknown';
       const attemptedMethod = req.method;
 

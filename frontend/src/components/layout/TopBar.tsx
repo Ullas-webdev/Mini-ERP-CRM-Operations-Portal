@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Shield, LogOut, Search, Package, Users, X, Menu } from 'lucide-react';
+import { User as UserIcon, Shield, LogOut, Search, Package, X, Menu } from 'lucide-react';
 import { useAuth, UserRole } from '../../context/AuthContext';
 import { Badge, BadgeVariant } from '../common/Badge';
 import { axiosClient } from '../../api/axiosClient';
 
 interface SearchResult {
-  type: 'customer' | 'product';
+  type: 'inventory' | 'product';
   id: string;
   primary: string;
   secondary: string;
@@ -27,34 +27,18 @@ const useGlobalSearch = (query: string) => {
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const [cusRes, prodRes] = await Promise.allSettled([
-          axiosClient.get(`/customers?search=${encodeURIComponent(query)}&limit=5`),
-          axiosClient.get(`/products?search=${encodeURIComponent(query)}&limit=5`),
-        ]);
+        const prodRes = await axiosClient.get(`/products?search=${encodeURIComponent(query)}`);
+        const products: SearchResult[] = (prodRes.data?.data?.products ?? []).map((p: any) => ({
+          type: 'product',
+          id: p.id,
+          primary: p.name,
+          secondary: `SKU: ${p.sku}`,
+          meta: p.category,
+        }));
 
-        const customers: SearchResult[] =
-          cusRes.status === 'fulfilled'
-            ? (cusRes.value.data.data?.customers ?? []).map((c: any) => ({
-                type: 'customer',
-                id: c.id,
-                primary: c.name,
-                secondary: c.businessName,
-                meta: c.status,
-              }))
-            : [];
-
-        const products: SearchResult[] =
-          prodRes.status === 'fulfilled'
-            ? (prodRes.value.data.data?.products ?? []).map((p: any) => ({
-                type: 'product',
-                id: p.id,
-                primary: p.name,
-                secondary: p.sku,
-                meta: `Stock: ${p.currentStock}`,
-              }))
-            : [];
-
-        setResults([...customers, ...products]);
+        setResults(products);
+      } catch {
+        setResults([]);
       } finally {
         setIsLoading(false);
       }
@@ -83,16 +67,14 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleMobileMenu }) => {
 
   const roleVariants: Record<UserRole, BadgeVariant> = {
     ADMIN: 'purple',
+    OPERATIONS: 'warning',
     SALES: 'info',
-    WAREHOUSE: 'warning',
-    ACCOUNTS: 'success',
   };
 
   const roleDefaultPaths: Record<UserRole, string> = {
     ADMIN: '/',
-    SALES: '/sales',
-    WAREHOUSE: '/warehouse',
-    ACCOUNTS: '/accounts',
+    OPERATIONS: '/inventory',
+    SALES: '/customer-orders',
   };
 
   const handleRoleSelect = async (selectedRole: UserRole) => {
@@ -100,17 +82,12 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleMobileMenu }) => {
     navigate(roleDefaultPaths[selectedRole]);
   };
 
-  const handleResultClick = (result: SearchResult) => {
+  const handleResultClick = (_result: SearchResult) => {
     setSearchQuery('');
     setIsSearchFocused(false);
-    if (result.type === 'customer') {
-      navigate('/sales');
-    } else {
-      navigate('/warehouse');
-    }
+    navigate('/inventory');
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -130,7 +107,6 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleMobileMenu }) => {
 
   return (
     <header className="h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-40 gap-2">
-      {/* Mobile Menu Hamburger Toggle */}
       {onToggleMobileMenu && (
         <button
           onClick={onToggleMobileMenu}
@@ -149,7 +125,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleMobileMenu }) => {
           <Search className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
           <input
             type="text"
-            placeholder="Search customers, products, SKUs..."
+            placeholder="Search items, SKUs, categories..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
@@ -162,7 +138,6 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleMobileMenu }) => {
           )}
         </div>
 
-        {/* Search Results Dropdown */}
         {showDropdown && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50">
             {searchLoading && results.length === 0 ? (
@@ -170,52 +145,25 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleMobileMenu }) => {
             ) : results.length === 0 ? (
               <div className="px-4 py-3 text-xs text-slate-500">No results for "{searchQuery}"</div>
             ) : (
-              <>
-                {results.filter(r => r.type === 'customer').length > 0 && (
-                  <div>
-                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase text-slate-500 tracking-wider bg-slate-950/50 border-b border-slate-800">
-                      Customers
+              <div>
+                <div className="px-3 py-1.5 text-[10px] font-bold uppercase text-slate-500 tracking-wider bg-slate-950/50 border-b border-slate-800">
+                  Product Catalog Items
+                </div>
+                {results.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => handleResultClick(r)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800/80 transition-colors text-left"
+                  >
+                    <Package className="h-4 w-4 text-sky-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-200 truncate">{r.primary}</p>
+                      <p className="text-[11px] font-mono text-sky-400 truncate">{r.secondary}</p>
                     </div>
-                    {results.filter(r => r.type === 'customer').map((r) => (
-                      <button
-                        key={r.id}
-                        onClick={() => handleResultClick(r)}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800/80 transition-colors text-left"
-                      >
-                        <Users className="h-4 w-4 text-sky-400 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-slate-200 truncate">{r.primary}</p>
-                          <p className="text-[11px] text-slate-400 truncate">{r.secondary}</p>
-                        </div>
-                        <Badge variant={r.meta === 'ACTIVE' ? 'success' : r.meta === 'LEAD' ? 'warning' : 'neutral'} size="sm">
-                          {r.meta}
-                        </Badge>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {results.filter(r => r.type === 'product').length > 0 && (
-                  <div>
-                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase text-slate-500 tracking-wider bg-slate-950/50 border-b border-slate-800">
-                      Products
-                    </div>
-                    {results.filter(r => r.type === 'product').map((r) => (
-                      <button
-                        key={r.id}
-                        onClick={() => handleResultClick(r)}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800/80 transition-colors text-left"
-                      >
-                        <Package className="h-4 w-4 text-purple-400 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-slate-200 truncate">{r.primary}</p>
-                          <p className="text-[11px] font-mono text-sky-400 truncate">{r.secondary}</p>
-                        </div>
-                        <span className="text-[10px] text-slate-400 flex-shrink-0">{r.meta}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
+                    <span className="text-[10px] text-slate-400 flex-shrink-0">{r.meta}</span>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -223,14 +171,13 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleMobileMenu }) => {
 
       {/* Right Controls */}
       <div className="flex items-center gap-2 md:gap-4 ml-4">
-        {/* Role Switcher (Admin Only) */}
         {user?.role === 'ADMIN' && (
           <div className="hidden md:flex items-center space-x-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
             <span className="text-[11px] font-semibold uppercase text-slate-400 px-2 flex items-center gap-1">
               <Shield className="h-3 w-3 text-sky-400" />
               <span className="hidden lg:inline">Simulate Role:</span>
             </span>
-            {(['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'] as UserRole[]).map((r) => (
+            {(['ADMIN', 'OPERATIONS', 'SALES'] as UserRole[]).map((r) => (
               <button
                 key={r}
                 type="button"
@@ -247,10 +194,9 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleMobileMenu }) => {
           </div>
         )}
 
-        {/* User & Role Badge */}
         <div className="flex items-center gap-2 pl-2 md:pl-4 border-l border-slate-800">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-sky-600 to-indigo-600 flex items-center justify-center border border-sky-700/50 flex-shrink-0">
-            <User className="h-4 w-4 text-white" />
+            <UserIcon className="h-4 w-4 text-white" />
           </div>
           <div className="hidden sm:flex flex-col">
             <span className="text-xs font-semibold text-slate-200 leading-tight">

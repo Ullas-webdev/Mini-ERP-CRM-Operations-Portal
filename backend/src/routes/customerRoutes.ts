@@ -7,11 +7,8 @@ import {
   getCustomers,
   getCustomerById,
   updateCustomer,
-  addCustomerNote,
-  getCustomerNotes,
   createCustomerSchema,
   updateCustomerSchema,
-  createNoteSchema,
   customerQuerySchema,
 } from '../controllers/customerController';
 
@@ -27,11 +24,11 @@ router.post(
   createCustomer
 );
 
-// Get Customers List (Read-only access for Warehouse & Accounts)
+// Get Customers List (Read-only access for Operations)
 router.get(
   '/',
   authenticate,
-  authorize('ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'),
+  authorize('ADMIN', 'OPERATIONS', 'SALES'),
   validateRequest({ query: customerQuerySchema }),
   getCustomers
 );
@@ -40,7 +37,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
-  authorize('ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'),
+  authorize('ADMIN', 'OPERATIONS', 'SALES'),
   getCustomerById
 );
 
@@ -52,24 +49,6 @@ router.patch(
   auditLog('CUSTOMER_UPDATED', 'CUSTOMER'),
   validateRequest({ body: updateCustomerSchema }),
   updateCustomer
-);
-
-// Add Customer Note (Admin & Sales)
-router.post(
-  '/:id/notes',
-  authenticate,
-  authorize('ADMIN', 'SALES'),
-  auditLog('NOTE_ADDED', 'CUSTOMER_NOTE'),
-  validateRequest({ body: createNoteSchema }),
-  addCustomerNote
-);
-
-// Get Customer Notes Timeline
-router.get(
-  '/:id/notes',
-  authenticate,
-  authorize('ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'),
-  getCustomerNotes
 );
 
 export default router;

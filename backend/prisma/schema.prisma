@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -8,63 +8,46 @@ generator client {
 }
 
 model User {
-  id                  String         @id @default(uuid())
+  id                  String           @id @default(uuid())
   name                String
-  email               String         @unique
+  email               String           @unique
   passwordHash        String
-  role                String         @default("SALES") // ADMIN | SALES | WAREHOUSE | ACCOUNTS
-  isActive            Boolean        @default(true)
-  failedLoginAttempts Int            @default(0)
+  role                String           @default("SALES") // ADMIN | OPERATIONS | SALES
+  isActive            Boolean          @default(true)
+  failedLoginAttempts Int              @default(0)
   lockedUntil         DateTime?
   lastLoginAt         DateTime?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  
-  createdCustomers    Customer[]     @relation("CustomerCreator")
-  customerNotes       CustomerNote[] @relation("NoteAuthor")
-  stockMovements      StockMovement[]@relation("MovementCreator")
-  salesChallans       SalesChallan[] @relation("ChallanCreator")
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  assignedWorkOrders  WorkOrder[]      @relation("AssignedWorker")
+  createdWorkOrders   WorkOrder[]      @relation("WorkOrderCreator")
+  dispatchedTransfers StockTransfer[]  @relation("TransferDispatcher")
+  receivedTransfers   StockTransfer[]  @relation("TransferReceiver")
+  createdTransfers    StockTransfer[]  @relation("TransferCreator")
+  createdOrders       CustomerOrder[]  @relation("OrderCreator")
   auditLogs           AuditLog[]
   refreshTokens       RefreshToken[]
+  createdCustomers    Customer[]       @relation("CustomerCreator")
 
   @@map("users")
 }
 
-model Customer {
-  id           String         @id @default(uuid())
-  name         String
-  mobile       String
-  email        String?
-  businessName String
-  gstNumber    String?
-  customerType String         @default("RETAIL") // RETAIL | WHOLESALE | DISTRIBUTOR
-  address      String
-  status       String         @default("LEAD")   // LEAD | ACTIVE | INACTIVE
-  followUpDate DateTime?
-  createdBy    String
-  creator      User           @relation("CustomerCreator", fields: [createdBy], references: [id])
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+model Location {
+  id                  String           @id @default(uuid())
+  code                String           @unique
+  name                String
+  address             String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
-  notes        CustomerNote[]
-  salesChallans SalesChallan[]
+  inventories         Inventory[]
+  workOrders          WorkOrder[]
+  sourceTransfers     StockTransfer[]  @relation("SourceLocation")
+  destTransfers       StockTransfer[]  @relation("DestLocation")
+  customerOrders      CustomerOrder[]
 
-  @@index([createdBy])
-  @@index([status])
-  @@map("customers")
-}
-
-model CustomerNote {
-  id         String   @id @default(uuid())
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  authorId   String
-  author     User     @relation("NoteAuthor", fields: [authorId], references: [id])
-  note       String
-  createdAt  DateTime @default(now())
-
-  @@index([customerId])
-  @@map("customer_notes")
+  @@map("locations")
 }
 
 model Product {
@@ -73,69 +56,158 @@ model Product {
   sku               String            @unique
   category          String
   unitPrice         Float
-  currentStock      Int               @default(0)
   minStockAlert     Int               @default(10)
-  warehouseLocation String
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  stockMovements    StockMovement[]
-  lineItems         ChallanLineItem[]
+  inventories       Inventory[]
+  workOrders        WorkOrder[]
+  stockTransfers    StockTransfer[]
+  orderItems        OrderItem[]
 
   @@index([sku])
   @@map("products")
 }
 
-model StockMovement {
-  id              String   @id @default(uuid())
-  productId       String
-  product         Product  @relation(fields: [productId], references: [id])
-  quantityChanged Int
-  movementType    String   // IN | OUT
-  reason          String
-  createdBy       String
-  creator         User     @relation("MovementCreator", fields: [createdBy], references: [id])
-  createdAt       DateTime @default(now())
+model Inventory {
+  id                String            @id @default(uuid())
+  productId         String
+  product           Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  locationId        String
+  location          Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  batchNumber       String            @default("DEFAULT")
+  physicalQuantity  Int               @default(0)
+  reservedQuantity  Int               @default(0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
+  movements         StockMovement[]
+
+  @@unique([productId, locationId, batchNumber])
+  @@index([locationId])
   @@index([productId])
+  @@map("inventories")
+}
+
+model StockMovement {
+  id              String         @id @default(uuid())
+  inventoryId     String
+  inventory       Inventory      @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  quantityChanged Int
+  movementType    String         // IN | OUT | TRANSFER_DISPATCH | TRANSFER_RECEIPT | RESERVATION | RELEASE
+  reason          String
+  referenceId     String?
+  createdById     String?
+  createdAt       DateTime       @default(now())
+
+  @@index([inventoryId])
   @@index([createdAt])
   @@map("stock_movements")
 }
 
-model SalesChallan {
-  id            String            @id @default(uuid())
-  challanNumber String            @unique
-  customerId    String
-  customer      Customer          @relation(fields: [customerId], references: [id])
-  status        String            @default("DRAFT") // DRAFT | CONFIRMED | CANCELLED
-  totalQuantity Int               @default(0)
-  createdBy     String
-  creator       User              @relation("ChallanCreator", fields: [createdBy], references: [id])
-  createdAt     DateTime          @default(now())
-  confirmedAt   DateTime?
-  updatedAt     DateTime          @updatedAt
+model WorkOrder {
+  id               String          @id @default(uuid())
+  workOrderNumber  String          @unique
+  locationId       String
+  location         Location        @relation(fields: [locationId], references: [id])
+  productId        String
+  product          Product         @relation(fields: [productId], references: [id])
+  requiredQuantity Int
+  assignedUserId   String
+  assignedUser     User            @relation("AssignedWorker", fields: [assignedUserId], references: [id])
+  createdById      String
+  creator          User            @relation("WorkOrderCreator", fields: [createdById], references: [id])
+  status           String          @default("ASSIGNED") // ASSIGNED | IN_PROGRESS | COMPLETED
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  lineItems     ChallanLineItem[]
-
-  @@index([customerId])
+  @@index([locationId])
   @@index([status])
-  @@map("sales_challans")
+  @@index([assignedUserId])
+  @@map("work_orders")
 }
 
-model ChallanLineItem {
-  id                  String       @id @default(uuid())
-  challanId           String
-  challan             SalesChallan @relation(fields: [challanId], references: [id], onDelete: Cascade)
-  productId           String
-  product             Product      @relation(fields: [productId], references: [id])
-  quantity            Int
-  unitPriceSnapshot   Float
-  productNameSnapshot String
-  createdAt           DateTime     @default(now())
+model StockTransfer {
+  id                    String         @id @default(uuid())
+  transferNumber        String         @unique
+  sourceLocationId      String
+  sourceLocation        Location       @relation("SourceLocation", fields: [sourceLocationId], references: [id])
+  destinationLocationId String
+  destinationLocation   Location       @relation("DestLocation", fields: [destinationLocationId], references: [id])
+  productId             String
+  product               Product        @relation(fields: [productId], references: [id])
+  quantity              Int
+  status                String         @default("REQUESTED") // REQUESTED | DISPATCHED | RECEIVED
+  dispatchedAt          DateTime?
+  receivedAt            DateTime?
+  createdById           String
+  creator               User           @relation("TransferCreator", fields: [createdById], references: [id])
+  dispatchedById        String?
+  dispatcher            User?          @relation("TransferDispatcher", fields: [dispatchedById], references: [id])
+  receivedById          String?
+  receiver              User?          @relation("TransferReceiver", fields: [receivedById], references: [id])
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
-  @@index([challanId])
+  @@index([sourceLocationId])
+  @@index([destinationLocationId])
+  @@index([status])
+  @@map("stock_transfers")
+}
+
+model Customer {
+  id           String          @id @default(uuid())
+  name         String
+  mobile       String
+  email        String?
+  businessName String
+  gstNumber    String?
+  address      String
+  status       String          @default("ACTIVE")
+  createdById  String
+  creator      User            @relation("CustomerCreator", fields: [createdById], references: [id])
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  orders       CustomerOrder[]
+
+  @@map("customers")
+}
+
+model CustomerOrder {
+  id            String          @id @default(uuid())
+  orderNumber   String          @unique
+  customerId    String
+  customer      Customer        @relation(fields: [customerId], references: [id])
+  locationId    String
+  location      Location        @relation(fields: [locationId], references: [id])
+  status        String          @default("PENDING") // PENDING | RESERVED | FULFILLED | CANCELLED
+  totalAmount   Float           @default(0)
+  createdById   String
+  creator       User            @relation("OrderCreator", fields: [createdById], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  items         OrderItem[]
+
+  @@index([customerId])
+  @@index([locationId])
+  @@index([status])
+  @@map("customer_orders")
+}
+
+model OrderItem {
+  id                String        @id @default(uuid())
+  orderId           String
+  order             CustomerOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product       @relation(fields: [productId], references: [id])
+  quantity          Int
+  unitPriceSnapshot Float
+
+  @@index([orderId])
   @@index([productId])
-  @@map("challan_line_items")
+  @@map("order_items")
 }
 
 model AuditLog {

@@ -5,80 +5,50 @@ import { validateRequest } from '../middleware/validateRequest';
 import {
   createProduct,
   getProducts,
-  getLowStockProducts,
   getProductById,
   updateProduct,
-  adjustStock,
-  getProductMovements,
   createProductSchema,
   updateProductSchema,
-  stockAdjustmentSchema,
   productQuerySchema,
 } from '../controllers/productController';
 
 const router = Router();
 
-// Create Product (Admin & Warehouse)
+// Create Product (Admin & Operations)
 router.post(
   '/',
   authenticate,
-  authorize('ADMIN', 'WAREHOUSE'),
+  authorize('ADMIN', 'OPERATIONS'),
   auditLog('PRODUCT_CREATED', 'PRODUCT'),
   validateRequest({ body: createProductSchema }),
   createProduct
 );
 
-// Get Products Catalog List (Read-only access for Sales & Accounts)
+// Get Products Catalog List (Read-only for all roles)
 router.get(
   '/',
   authenticate,
-  authorize('ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'),
+  authorize('ADMIN', 'OPERATIONS', 'SALES'),
   validateRequest({ query: productQuerySchema }),
   getProducts
-);
-
-// Get Low-Stock Alerts List (All roles)
-router.get(
-  '/low-stock',
-  authenticate,
-  authorize('ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'),
-  getLowStockProducts
 );
 
 // Get Single Product by ID
 router.get(
   '/:id',
   authenticate,
-  authorize('ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'),
+  authorize('ADMIN', 'OPERATIONS', 'SALES'),
   getProductById
 );
 
-// Update Product Metadata (Admin & Warehouse; currentStock changes strictly stripped!)
+// Update Product Metadata (Admin & Operations)
 router.patch(
   '/:id',
   authenticate,
-  authorize('ADMIN', 'WAREHOUSE'),
+  authorize('ADMIN', 'OPERATIONS'),
   auditLog('PRODUCT_UPDATED', 'PRODUCT'),
   validateRequest({ body: updateProductSchema }),
   updateProduct
-);
-
-// Transactional Stock Adjustment (Admin & Warehouse only)
-router.post(
-  '/:id/stock-adjustment',
-  authenticate,
-  authorize('ADMIN', 'WAREHOUSE'),
-  auditLog('STOCK_ADJUSTED', 'STOCK_MOVEMENT'),
-  validateRequest({ body: stockAdjustmentSchema }),
-  adjustStock
-);
-
-// Get Product Movement Audit Ledger History
-router.get(
-  '/:id/movements',
-  authenticate,
-  authorize('ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS'),
-  getProductMovements
 );
 
 export default router;

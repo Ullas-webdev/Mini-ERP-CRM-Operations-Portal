@@ -36,6 +36,12 @@ export class ValidationError extends AppError {
   }
 }
 
+export class UnprocessableEntityError extends AppError {
+  constructor(message = 'Unprocessable entity', details: any = null) {
+    super(422, 'UNPROCESSABLE_ENTITY', message, details);
+  }
+}
+
 export class UnauthorizedError extends AppError {
   constructor(message = 'Unauthorized access', details: any = null) {
     super(401, 'UNAUTHORIZED', message, details);

@@ -3,63 +3,78 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-// Enums definition for seed type-safety
 const Role = {
   ADMIN: 'ADMIN',
+  OPERATIONS: 'OPERATIONS',
   SALES: 'SALES',
-  WAREHOUSE: 'WAREHOUSE',
-  ACCOUNTS: 'ACCOUNTS',
-} as const;
+};
 
-const CustomerType = {
-  RETAIL: 'RETAIL',
-  WHOLESALE: 'WHOLESALE',
-  DISTRIBUTOR: 'DISTRIBUTOR',
-} as const;
+const WorkOrderStatus = {
+  ASSIGNED: 'ASSIGNED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+};
 
-const CustomerStatus = {
-  LEAD: 'LEAD',
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
-} as const;
+const TransferStatus = {
+  REQUESTED: 'REQUESTED',
+  DISPATCHED: 'DISPATCHED',
+  RECEIVED: 'RECEIVED',
+};
+
+const OrderStatus = {
+  PENDING: 'PENDING',
+  RESERVED: 'RESERVED',
+  FULFILLED: 'FULFILLED',
+  CANCELLED: 'CANCELLED',
+};
 
 const MovementType = {
   IN: 'IN',
   OUT: 'OUT',
-} as const;
-
-const ChallanStatus = {
-  DRAFT: 'DRAFT',
-  CONFIRMED: 'CONFIRMED',
-  CANCELLED: 'CANCELLED',
-} as const;
+  TRANSFER_DISPATCH: 'TRANSFER_DISPATCH',
+  TRANSFER_RECEIPT: 'TRANSFER_RECEIPT',
+  RESERVATION: 'RESERVATION',
+  RELEASE: 'RELEASE',
+};
 
 async function main() {
-  console.log('🌱 Starting Database Seeding...');
+  console.log('🌱 Starting Database Seeding for Mini Operations ERP...');
 
   // Clean existing tables in reverse dependency order
-  await prisma.challanLineItem.deleteMany();
-  await prisma.salesChallan.deleteMany();
+  await prisma.orderItem.deleteMany();
+  await prisma.customerOrder.deleteMany();
+  await prisma.stockTransfer.deleteMany();
+  await prisma.workOrder.deleteMany();
   await prisma.stockMovement.deleteMany();
-  await prisma.customerNote.deleteMany();
+  await prisma.inventory.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.location.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.user.deleteMany();
 
   console.log('🧹 Cleaned existing database records.');
 
-  // Hash standard demo password
   const defaultPasswordHash = await bcrypt.hash('Demo@123', 10);
 
-  // 1. Seed Demo Users per Role
+  // 1. Seed Users (Admin, Operations, Sales)
   const adminUser = await prisma.user.create({
     data: {
       name: 'System Admin',
       email: 'admin@demo.com',
       passwordHash: defaultPasswordHash,
       role: Role.ADMIN,
+      isActive: true,
+    },
+  });
+
+  const opsUser = await prisma.user.create({
+    data: {
+      name: 'Operations Manager',
+      email: 'ops@demo.com',
+      passwordHash: defaultPasswordHash,
+      role: Role.OPERATIONS,
       isActive: true,
     },
   });
@@ -74,29 +89,159 @@ async function main() {
     },
   });
 
-  const warehouseUser = await prisma.user.create({
+  console.log('👤 Created 3 Demo Users (admin@demo.com, ops@demo.com, sales@demo.com).');
+
+  // 2. Seed Locations
+  const locAlpha = await prisma.location.create({
     data: {
-      name: 'Warehouse Controller',
-      email: 'warehouse@demo.com',
-      passwordHash: defaultPasswordHash,
-      role: Role.WAREHOUSE,
-      isActive: true,
+      code: 'LOC-WH-A',
+      name: 'Warehouse Alpha',
+      address: 'Plot 102 Industrial Estate, Mumbai',
     },
   });
 
-  await prisma.user.create({
+  const locBeta = await prisma.location.create({
     data: {
-      name: 'Finance Manager',
-      email: 'accounts@demo.com',
-      passwordHash: defaultPasswordHash,
-      role: Role.ACCOUNTS,
-      isActive: true,
+      code: 'LOC-WH-B',
+      name: 'Warehouse Beta',
+      address: 'GIDC Sector 28, Gandhinagar',
     },
   });
 
-  console.log('👤 Created 4 Demo Users (admin, sales, warehouse, accounts).');
+  const locAsm = await prisma.location.create({
+    data: {
+      code: 'LOC-ASM-1',
+      name: 'Assembly Line 1',
+      address: 'Peenya Industrial Area, Bengaluru',
+    },
+  });
 
-  // 2. Seed 5 Sample Customers
+  console.log('📍 Created 3 Locations (Warehouse Alpha, Warehouse Beta, Assembly Line 1).');
+
+  // 3. Seed Products
+  const prodValve = await prisma.product.create({
+    data: {
+      name: 'Industrial Hydraulic Valve 3/4"',
+      sku: 'SKU-VALVE-001',
+      category: 'Hydraulics',
+      unitPrice: 2450.0,
+      minStockAlert: 15,
+    },
+  });
+
+  const prodBearing = await prisma.product.create({
+    data: {
+      name: 'Precision Ball Bearing 6204-2RS',
+      sku: 'SKU-BEAR-002',
+      category: 'Bearings',
+      unitPrice: 380.5,
+      minStockAlert: 30,
+    },
+  });
+
+  const prodGasket = await prisma.product.create({
+    data: {
+      name: 'Heavy Duty Gasket Kit',
+      sku: 'SKU-GASKET-003',
+      category: 'Seals & Gaskets',
+      unitPrice: 890.0,
+      minStockAlert: 20,
+    },
+  });
+
+  const prodRelay = await prisma.product.create({
+    data: {
+      name: '4-Channel Relay Module 24V',
+      sku: 'SKU-RELAY-008',
+      category: 'Electrical',
+      unitPrice: 450.0,
+      minStockAlert: 50,
+    },
+  });
+
+  console.log('📦 Created 4 Sample Products.');
+
+  // 4. Seed Inventory Records with Batches
+  const invValveAlpha = await prisma.inventory.create({
+    data: {
+      productId: prodValve.id,
+      locationId: locAlpha.id,
+      batchNumber: 'BATCH-2026-A',
+      physicalQuantity: 100,
+      reservedQuantity: 30, // Available = 70
+    },
+  });
+
+  const invValveBeta = await prisma.inventory.create({
+    data: {
+      productId: prodValve.id,
+      locationId: locBeta.id,
+      batchNumber: 'BATCH-2026-B',
+      physicalQuantity: 60,
+      reservedQuantity: 0, // Available = 60
+    },
+  });
+
+  const invBearingAlpha = await prisma.inventory.create({
+    data: {
+      productId: prodBearing.id,
+      locationId: locAlpha.id,
+      batchNumber: 'BATCH-2026-A',
+      physicalQuantity: 150,
+      reservedQuantity: 20, // Available = 130
+    },
+  });
+
+  const invGasketAlpha = await prisma.inventory.create({
+    data: {
+      productId: prodGasket.id,
+      locationId: locAlpha.id,
+      batchNumber: 'BATCH-2026-A',
+      physicalQuantity: 10,
+      reservedQuantity: 0, // Available = 10 (Low stock)
+    },
+  });
+
+  await prisma.inventory.create({
+    data: {
+      productId: prodRelay.id,
+      locationId: locAsm.id,
+      batchNumber: 'BATCH-2026-A',
+      physicalQuantity: 200,
+      reservedQuantity: 50, // Available = 150
+    },
+  });
+
+  console.log('📊 Created Batch Inventories across Locations.');
+
+  // 5. Seed Stock Movement Ledgers
+  await prisma.stockMovement.createMany({
+    data: [
+      {
+        inventoryId: invValveAlpha.id,
+        quantityChanged: 100,
+        movementType: MovementType.IN,
+        reason: 'Initial physical inventory audit upload',
+        createdById: opsUser.id,
+      },
+      {
+        inventoryId: invValveAlpha.id,
+        quantityChanged: 30,
+        movementType: MovementType.RESERVATION,
+        reason: 'Initial customer order reservation',
+        createdById: salesUser.id,
+      },
+      {
+        inventoryId: invValveBeta.id,
+        quantityChanged: 60,
+        movementType: MovementType.IN,
+        reason: 'Initial warehouse receipt',
+        createdById: opsUser.id,
+      },
+    ],
+  });
+
+  // 6. Seed Customers & Customer Orders
   const customer1 = await prisma.customer.create({
     data: {
       name: 'Rajesh Sharma',
@@ -104,261 +249,82 @@ async function main() {
       email: 'rajesh@apexretailers.in',
       businessName: 'Apex Retailers Pvt Ltd',
       gstNumber: '27AAAAA0000A1Z5',
-      customerType: CustomerType.RETAIL,
-      address: '102 Industrial Estate, Andheri East, Mumbai 400069',
-      status: CustomerStatus.ACTIVE,
-      createdBy: salesUser.id,
+      address: '102 Industrial Estate, Mumbai 400069',
+      createdById: salesUser.id,
     },
   });
 
-  await prisma.customer.create({
+  const order1 = await prisma.customerOrder.create({
     data: {
-      name: 'Vikram Patel',
-      mobile: '+919823456789',
-      email: 'vikram@logisticsglobal.com',
-      businessName: 'Logistics Global Supply',
-      gstNumber: '24BBBBA1111B2Z6',
-      customerType: CustomerType.WHOLESALE,
-      address: 'GIDC Plot 45, Sector 28, Gandhinagar 382028',
-      status: CustomerStatus.ACTIVE,
-      createdBy: salesUser.id,
-    },
-  });
-
-  await prisma.customer.create({
-    data: {
-      name: 'Anita Desai',
-      mobile: '+919911223344',
-      email: 'anita@metrodip.co.in',
-      businessName: 'Metro Distributors',
-      gstNumber: '29CCCCA2222C3Z7',
-      customerType: CustomerType.DISTRIBUTOR,
-      address: 'Industrial Ring Road, Peenya, Bengaluru 560058',
-      status: CustomerStatus.ACTIVE,
-      createdBy: adminUser.id,
-    },
-  });
-
-  const customer4 = await prisma.customer.create({
-    data: {
-      name: 'Suresh Menon',
-      mobile: '+919766554433',
-      email: 'suresh@menonenterprises.com',
-      businessName: 'Menon Enterprises',
-      gstNumber: null,
-      customerType: CustomerType.RETAIL,
-      address: 'MG Road Trade Center, Kochi 682016',
-      status: CustomerStatus.LEAD,
-      followUpDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      createdBy: salesUser.id,
-    },
-  });
-
-  await prisma.customer.create({
-    data: {
-      name: 'Priya Verma',
-      mobile: '+919123456780',
-      email: 'priya@urbanmart.org',
-      businessName: 'Urban Mart Solutions',
-      gstNumber: '07DDDDD3333D4Z8',
-      customerType: CustomerType.WHOLESALE,
-      address: 'Connaught Place Outer Ring, New Delhi 110001',
-      status: CustomerStatus.LEAD,
-      followUpDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-      createdBy: salesUser.id,
-    },
-  });
-
-  console.log('🏢 Created 5 Sample Customers.');
-
-  // Seed Customer Notes
-  await prisma.customerNote.createMany({
-    data: [
-      {
-        customerId: customer1.id,
-        authorId: salesUser.id,
-        note: 'Initial inquiry regarding bulk purchase of hydraulic valves.',
-      },
-      {
-        customerId: customer1.id,
-        authorId: salesUser.id,
-        note: 'Sent formal quotation for 50 units. Awaiting PO approval.',
-      },
-      {
-        customerId: customer4.id,
-        authorId: salesUser.id,
-        note: 'Lead expressed interest in relay modules. Scheduled demo call next week.',
-      },
-    ],
-  });
-
-  console.log('📝 Created Customer Activity Notes.');
-
-  // 3. Seed 10 Sample Products (At least 2 products strictly BELOW minStockAlert)
-  const productsData = [
-    {
-      name: 'Industrial Hydraulic Valve 3/4"',
-      sku: 'SKU-VALVE-001',
-      category: 'Hydraulics',
-      unitPrice: 2450.00,
-      currentStock: 45,
-      minStockAlert: 15,
-      warehouseLocation: 'Rack A-12',
-    },
-    {
-      name: 'Precision Ball Bearing 6204-2RS',
-      sku: 'SKU-BEAR-002',
-      category: 'Bearings',
-      unitPrice: 380.50,
-      currentStock: 120,
-      minStockAlert: 30,
-      warehouseLocation: 'Bin B-04',
-    },
-    {
-      name: 'Heavy Duty Gasket Kit (High Temp)',
-      sku: 'SKU-GASKET-003',
-      category: 'Seals & Gaskets',
-      unitPrice: 890.00,
-      currentStock: 3, // ⚠️ CRITICAL LOW STOCK (min: 20)
-      minStockAlert: 20,
-      warehouseLocation: 'Shelf C-01',
-    },
-    {
-      name: 'Stainless Steel Flange 4" ANSI 150',
-      sku: 'SKU-FLANGE-004',
-      category: 'Piping',
-      unitPrice: 1750.00,
-      currentStock: 85,
-      minStockAlert: 25,
-      warehouseLocation: 'Rack D-08',
-    },
-    {
-      name: 'Digital Pressure Transmitter 0-10 Bar',
-      sku: 'SKU-SENSOR-005',
-      category: 'Instrumentation',
-      unitPrice: 4200.00,
-      currentStock: 4, // ⚠️ CRITICAL LOW STOCK (min: 15)
-      minStockAlert: 15,
-      warehouseLocation: 'Cabinet E-02',
-    },
-    {
-      name: 'High Pressure Reinforced Hose 10m',
-      sku: 'SKU-HOSE-006',
-      category: 'Hoses',
-      unitPrice: 1250.00,
-      currentStock: 60,
-      minStockAlert: 10,
-      warehouseLocation: 'Rack A-05',
-    },
-    {
-      name: 'Pneumatic Rotary Actuator 90-Deg',
-      sku: 'SKU-ACTUATOR-007',
-      category: 'Pneumatics',
-      unitPrice: 5600.00,
-      currentStock: 18,
-      minStockAlert: 5,
-      warehouseLocation: 'Shelf F-10',
-    },
-    {
-      name: '4-Channel Electrical Relay Module 24V',
-      sku: 'SKU-RELAY-008',
-      category: 'Electrical',
-      unitPrice: 450.00,
-      currentStock: 200,
-      minStockAlert: 50,
-      warehouseLocation: 'Bin B-18',
-    },
-    {
-      name: 'PLC Industrial Control Panel System',
-      sku: 'SKU-PANEL-009',
-      category: 'Automation',
-      unitPrice: 28500.00,
-      currentStock: 8,
-      minStockAlert: 3,
-      warehouseLocation: 'Zone G-01',
-    },
-    {
-      name: 'Thermal Pipe Insulation Wrap 50mm',
-      sku: 'SKU-INSUL-010',
-      category: 'Insulation',
-      unitPrice: 620.00,
-      currentStock: 2, // ⚠️ CRITICAL LOW STOCK (min: 10)
-      minStockAlert: 10,
-      warehouseLocation: 'Rack C-14',
-    },
-  ];
-
-  const createdProducts = [];
-  for (const p of productsData) {
-    const prod = await prisma.product.create({ data: p });
-    createdProducts.push(prod);
-  }
-
-  console.log('📦 Created 10 Sample Products (including 3 products below minStockAlert).');
-
-  // 4. Seed Stock Movements (Append-only ledger entries)
-  for (const prod of createdProducts) {
-    await prisma.stockMovement.create({
-      data: {
-        productId: prod.id,
-        quantityChanged: prod.currentStock,
-        movementType: MovementType.IN,
-        reason: 'Initial physical inventory audit upload',
-        createdBy: warehouseUser.id,
-      },
-    });
-  }
-
-  console.log('📈 Logged initial ledger StockMovements.');
-
-  // 5. Seed Sample Sales Challans with Line Items & Snapshots
-  const sampleChallan = await prisma.salesChallan.create({
-    data: {
-      challanNumber: 'CH-2026-0001',
+      orderNumber: 'ORD-2026-0001',
       customerId: customer1.id,
-      status: ChallanStatus.CONFIRMED,
-      totalQuantity: 5,
-      createdBy: salesUser.id,
-      confirmedAt: new Date(),
-      lineItems: {
+      locationId: locAlpha.id,
+      status: OrderStatus.RESERVED,
+      totalAmount: 73500.0,
+      createdById: salesUser.id,
+      items: {
         create: [
           {
-            productId: createdProducts[0].id,
-            quantity: 2,
-            unitPriceSnapshot: createdProducts[0].unitPrice,
-            productNameSnapshot: createdProducts[0].name,
-          },
-          {
-            productId: createdProducts[1].id,
-            quantity: 3,
-            unitPriceSnapshot: createdProducts[1].unitPrice,
-            productNameSnapshot: createdProducts[1].name,
+            productId: prodValve.id,
+            quantity: 30,
+            unitPriceSnapshot: 2450.0,
           },
         ],
       },
     },
   });
 
-  console.log(`🧾 Created sample SalesChallan (${sampleChallan.challanNumber}) with line item price snapshots.`);
+  console.log(`🧾 Created Customer Order (${order1.orderNumber}) with stock reservation.`);
 
-  // 6. Seed Sample Audit Log
+  // 7. Seed Work Orders
+  const wo1 = await prisma.workOrder.create({
+    data: {
+      workOrderNumber: 'WO-2026-0001',
+      locationId: locAlpha.id,
+      productId: prodValve.id,
+      requiredQuantity: 100,
+      assignedUserId: opsUser.id,
+      createdById: adminUser.id,
+      status: WorkOrderStatus.ASSIGNED,
+    },
+  });
+
+  console.log(`⚙️ Created Work Order (${wo1.workOrderNumber}) requiring 100 units.`);
+
+  // 8. Seed Stock Transfers
+  const tr1 = await prisma.stockTransfer.create({
+    data: {
+      transferNumber: 'TR-2026-0001',
+      sourceLocationId: locBeta.id,
+      destinationLocationId: locAlpha.id,
+      productId: prodValve.id,
+      quantity: 40,
+      status: TransferStatus.REQUESTED,
+      createdById: opsUser.id,
+    },
+  });
+
+  console.log(`🚚 Created Stock Transfer (${tr1.transferNumber}) in REQUESTED status.`);
+
+  // 9. Audit Log
   await prisma.auditLog.create({
     data: {
       userId: adminUser.id,
       action: 'DATABASE_SEEDED',
       entityType: 'SYSTEM',
-      entityId: 'seed-initial-v1',
+      entityId: 'seed-operations-v2',
       afterState: JSON.stringify({
-        usersCreated: 4,
-        customersCreated: 5,
-        productsCreated: 10,
+        users: 3,
+        locations: 3,
+        products: 4,
+        inventories: 5,
       }),
       ipAddress: '127.0.0.1',
     },
   });
 
   console.log('🛡️ Logged AuditLog seed event.');
-  console.log('✅ Seeding completed successfully!');
+  console.log('✅ Mini Operations ERP Seeding completed successfully!');
 }
 
 main()

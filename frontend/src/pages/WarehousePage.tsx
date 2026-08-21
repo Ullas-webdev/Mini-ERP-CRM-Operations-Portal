@@ -23,7 +23,7 @@ import {
 
 export const WarehousePage: React.FC = () => {
   const { user } = useAuth();
-  const canAdjustStock = user?.role === 'ADMIN' || user?.role === 'WAREHOUSE';
+  const canAdjustStock = user?.role === 'ADMIN' || user?.role === 'OPERATIONS';
 
   const [filters, setFilters] = useState<ProductsFilters>({
     page: 1,

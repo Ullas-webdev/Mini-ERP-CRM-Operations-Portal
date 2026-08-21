@@ -8,10 +8,11 @@ import { AppLayout } from './components/layout/AppLayout';
 
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { InventoryPage } from './pages/InventoryPage';
+import { WorkOrdersPage } from './pages/WorkOrdersPage';
+import { TransfersPage } from './pages/TransfersPage';
+import { CustomerOrdersPage } from './pages/CustomerOrdersPage';
 import { HealthPage } from './pages/HealthPage';
-import { SalesPage } from './pages/SalesPage';
-import { WarehousePage } from './pages/WarehousePage';
-import { AccountsPage } from './pages/AccountsPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 
@@ -57,20 +58,24 @@ export const App: React.FC = () => {
 
             {/* Application Layout Routes */}
             <Route element={<AppLayout />}>
-              {/* Health and Unauthorized public routes */}
               <Route path="/health" element={<HealthPage />} />
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-              {/* Protected Routes (Unauthenticated users redirect to /login) */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SALES', 'WAREHOUSE', 'ACCOUNTS']} />}>
+              {/* All Roles Access */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'OPERATIONS', 'SALES']} />}>
                 <Route path="/" element={<DashboardPage />} />
-                <Route path="/sales" element={<SalesPage />} />
-                <Route path="/warehouse" element={<WarehousePage />} />
+                <Route path="/inventory" element={<InventoryPage />} />
               </Route>
 
-              {/* Accounts Domain */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'ACCOUNTS']} />}>
-                <Route path="/accounts" element={<AccountsPage />} />
+              {/* Work Orders & Internal Transfers (Admin & Operations) */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'OPERATIONS']} />}>
+                <Route path="/work-orders" element={<WorkOrdersPage />} />
+                <Route path="/transfers" element={<TransfersPage />} />
+              </Route>
+
+              {/* Customer Orders & Reservations (Admin & Sales) */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SALES']} />}>
+                <Route path="/customer-orders" element={<CustomerOrdersPage />} />
               </Route>
 
               {/* Admin Audit Log */}
