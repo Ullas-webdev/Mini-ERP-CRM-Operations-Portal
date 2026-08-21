@@ -16,6 +16,8 @@ import { getAuditLogs, auditLogQuerySchema } from '../controllers/auditLogContro
 
 const router = Router();
 
+console.log('📌 V1 API Routes Initialized: /health, /auth, /locations, /inventory, /work-orders, /transfers, /customer-orders, /customers, /products, /dashboard');
+
 // Mount Health route
 router.use('/health', healthRouter);
 
