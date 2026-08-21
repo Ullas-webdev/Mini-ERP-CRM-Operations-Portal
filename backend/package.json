@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "node -e \"if (require('fs').existsSync('dist')) require('fs').rmSync('dist', {recursive: true, force: true})\" && prisma generate && tsc",
+    "prestart": "prisma generate && tsc",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
