@@ -8,6 +8,8 @@
     "frontend"
   ],
   "scripts": {
+    "build": "npm --prefix backend run build",
+    "start": "npm --prefix backend start",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "build:backend": "npm --prefix backend run build",
