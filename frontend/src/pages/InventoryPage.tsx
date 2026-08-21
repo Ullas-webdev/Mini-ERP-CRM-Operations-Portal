@@ -264,6 +264,16 @@ export const InventoryPage: React.FC = () => {
 
       {/* Inventory Table */}
       <Card title="Physical Stock Directory" subtitle={`Showing ${inventories.length} inventory records`}>
+        {isError && (
+          <div className="mb-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertOctagon className="h-4 w-4 text-rose-400 shrink-0" />
+              <span>
+                Unable to connect or load inventory records from the backend server. Please verify the backend service at <code className="text-sky-400 font-mono">http://localhost:5000/api/v1</code> is running.
+              </span>
+            </div>
+          </div>
+        )}
         <Table
           columns={columns}
           data={inventories}

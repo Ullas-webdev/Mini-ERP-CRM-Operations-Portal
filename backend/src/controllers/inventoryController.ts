@@ -32,20 +32,21 @@ export const getInventory = async (
 
     const where: any = {};
 
-    if (locationId && typeof locationId === 'string') {
-      where.locationId = locationId;
+    if (locationId && typeof locationId === 'string' && locationId.trim() !== '') {
+      where.locationId = locationId.trim();
     }
 
-    if (productId && typeof productId === 'string') {
-      where.productId = productId;
+    if (productId && typeof productId === 'string' && productId.trim() !== '') {
+      where.productId = productId.trim();
     }
 
-    if (search && typeof search === 'string') {
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      const trimmedSearch = search.trim();
       where.product = {
         OR: [
-          { name: { contains: search } },
-          { sku: { contains: search } },
-          { category: { contains: search } },
+          { name: { contains: trimmedSearch } },
+          { sku: { contains: trimmedSearch } },
+          { category: { contains: trimmedSearch } },
         ],
       };
     }
