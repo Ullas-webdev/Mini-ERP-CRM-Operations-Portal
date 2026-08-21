@@ -1,8 +1,8 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 
-// Ensure DATABASE_URL is set, falling back to local SQLite file
-if (!process.env.DATABASE_URL) {
+// Ensure DATABASE_URL is set to a valid SQLite URL protocol
+if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.startsWith('file:')) {
   process.env.DATABASE_URL = 'file:./dev.db';
 }
 

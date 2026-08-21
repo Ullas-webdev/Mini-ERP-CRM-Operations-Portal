@@ -5,6 +5,11 @@ import { z } from 'zod';
 // Load .env file
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
+// Force SQLite URL protocol if DATABASE_URL is missing or set to non-sqlite URL on Render
+if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.startsWith('file:')) {
+  process.env.DATABASE_URL = 'file:./dev.db';
+}
+
 const envSchema = z.object({
   PORT: z
     .string()
