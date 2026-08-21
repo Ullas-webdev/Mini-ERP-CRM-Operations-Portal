@@ -14,24 +14,18 @@ const envSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
   DATABASE_URL: z
-    .string({
-      required_error: 'DATABASE_URL environment variable is required',
-    })
-    .min(1, 'DATABASE_URL cannot be empty'),
+    .string()
+    .default('file:./dev.db'),
   CORS_ORIGIN: z
     .string()
     .default('http://localhost:3000,http://localhost:5173')
     .transform((val) => val.split(',').map((origin) => origin.trim())),
   JWT_SECRET: z
-    .string({
-      required_error: 'JWT_SECRET environment variable is required',
-    })
-    .min(32, 'JWT_SECRET must be at least 32 characters long'),
+    .string()
+    .default('super-secret-jwt-key-min-32-chars-long!'),
   JWT_REFRESH_SECRET: z
-    .string({
-      required_error: 'JWT_REFRESH_SECRET environment variable is required',
-    })
-    .min(32, 'JWT_REFRESH_SECRET must be at least 32 characters long'),
+    .string()
+    .default('super-secret-refresh-jwt-key-min-32!'),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),

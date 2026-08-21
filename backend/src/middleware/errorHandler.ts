@@ -59,11 +59,11 @@ export const errorHandler = (
     success: false,
     error: {
       code: 'INTERNAL_SERVER_ERROR',
-      message:
-        env.NODE_ENV === 'production'
-          ? 'An unexpected internal error occurred'
-          : err.message,
-      details: env.NODE_ENV === 'development' ? { stack: err.stack } : null,
+      message: err.message || 'An unexpected internal error occurred',
+      details: {
+        name: err.name,
+        message: err.message,
+      },
     },
   };
 
