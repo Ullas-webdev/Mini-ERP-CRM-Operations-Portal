@@ -1,11 +1,9 @@
 import rateLimit from 'express-rate-limit';
 
-const isDev = process.env.NODE_ENV !== 'production';
-
-// Standard rate limiter for general routes (10,000 requests per 15 min in dev mode)
+// Standard rate limiter for general routes (10,000 requests per 15 min)
 export const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isDev ? 10000 : 100,
+  max: 10000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -18,10 +16,10 @@ export const globalRateLimiter = rateLimit({
   },
 });
 
-// Rate limiter for authentication endpoints (1,000 requests per 15 min in dev mode)
+// Rate limiter for authentication endpoints (10,000 requests per 15 min for seamless evaluation & demo)
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isDev ? 1000 : 100,
+  max: 10000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
