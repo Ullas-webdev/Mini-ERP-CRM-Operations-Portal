@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { prisma } from '../utils/prisma';
 import { env } from '../config/env';
@@ -108,13 +109,13 @@ export const login = async (
 
     // 5. Issue Access Token (15m) & Refresh Token (7d)
     const accessToken = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
+      { userId: user.id, email: user.email, role: user.role, jti: uuidv4() },
       env.JWT_SECRET,
       { expiresIn: '15m' }
     );
 
     const refreshToken = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
+      { userId: user.id, email: user.email, role: user.role, jti: uuidv4() },
       env.JWT_REFRESH_SECRET,
       { expiresIn: '7d' }
     );
@@ -207,6 +208,7 @@ export const refresh = async (
         userId: tokenRecord.user.id,
         email: tokenRecord.user.email,
         role: tokenRecord.user.role,
+        jti: uuidv4(),
       },
       env.JWT_SECRET,
       { expiresIn: '15m' }
@@ -217,6 +219,7 @@ export const refresh = async (
         userId: tokenRecord.user.id,
         email: tokenRecord.user.email,
         role: tokenRecord.user.role,
+        jti: uuidv4(),
       },
       env.JWT_REFRESH_SECRET,
       { expiresIn: '7d' }
