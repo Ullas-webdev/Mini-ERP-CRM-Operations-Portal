@@ -3,6 +3,7 @@
 > **Round 2 Technical Case Study Application**  
 > A Modular Monolith Operations ERP System engineered with **Node.js, Express, TypeScript, Prisma ORM, PostgreSQL, and React**.
 
+LIVE APPLICATION - https://mini-erp-crm-operations-portal-fron-dun.vercel.app/login
 ---
 
 ## 📌 1. Project Title
